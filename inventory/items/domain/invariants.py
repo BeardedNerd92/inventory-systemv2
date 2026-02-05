@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from .errors import InvariantError, DuplicateNameError
+from .errors import DuplicateNameError, InvariantError
+
 
 def normalize_name(name: str) -> str:
     """Trim + casefold for case-insensitive uniqueness."""
@@ -23,7 +24,7 @@ def validate_qty(qty: int) -> int:
     if qty < 0:
         raise InvariantError("qty must be a non-negative integer")
     return qty
-    
+
 
 def ensure_unique_name(normalized_name: str, existing_normalized_names: set[str]) -> None:
     if normalized_name in existing_normalized_names:

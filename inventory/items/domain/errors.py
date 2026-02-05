@@ -1,4 +1,3 @@
-# items/domain/errors.py
 class InvariantError(ValueError):
     pass
 
