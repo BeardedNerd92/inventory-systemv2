@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from .errors import DuplicateNameError, InvariantError
+from items.domain.errors import DuplicateNameError, InvariantError
 
 
 def normalize_name(name: str) -> str:
-    """Trim + casefold for case-insensitive uniqueness."""
     if not isinstance(name, str):
         raise InvariantError("name must be a string")
     return name.strip().casefold()
 
 
 def validate_name(name: str) -> str:
-    """Return normalized name or raise."""
     normalized = normalize_name(name)
     if normalized == "":
         raise InvariantError("name must be a non-empty string")

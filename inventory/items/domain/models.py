@@ -2,6 +2,6 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ItemModel:
-    id: int
+    id: str
     name: str
     qty: int
