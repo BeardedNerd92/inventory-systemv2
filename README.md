@@ -1,87 +1,182 @@
-# Inventory System v2
+# Inventory System v2 — Backend Systems Project
 
-A state-driven inventory management system focused on **domain truth, invariants, and clean system boundaries**.
+This project is a backend-only inventory system built to practice real backend engineering fundamentals: state modeling, invariants, transactional persistence, and correctness.
 
-This project is being built deliberately from the inside out:
+There is no UI. All interaction happens through HTTP endpoints using curl.
 
-1. Define truth
-2. Enforce invariants
-3. Establish service authority
-4. Then expose via API and UI
-
-The goal is not just to build an app, but to build it **correctly**.
+The goal of this project is not rapid feature building — it is learning how to design systems that preserve correctness under all transitions.
 
 ---
 
-## Architecture Principles
+## Architecture
 
-### Source of Truth
+transport → service → validate → persist → service return
 
-The **domain layer** defines what is true about the system.
-Persistence (Postgres) stores that truth but does not define it.
+Concrete stack:
 
-### Authority
+* Django (transport + models)
+* Service layer (transitions + transactions)
+* SQLite (persistence)
 
-All state mutation flows through the **service layer**, which enforces invariants before persistence.
-
-### Persistence
-
-Postgres will serve as the durable data store.
-A repository layer isolates persistence from domain logic.
-
-### Invariants
-
-System invariants enforced centrally:
-
-* Product name is trimmed and required
-* Quantity must be a non-negative integer
-* Product name is unique
-* Delete operations are idempotent
-
-These invariants define the system’s correctness and are enforced independent of UI or transport layer.
+No repository layer is used.
+The Django model + database are the source of truth.
 
 ---
 
-## Tech Stack (Planned)
+## System Design Principles
 
-* React (UI)
-* Django (transport + integration layer)
-* Postgres (persistence)
+### State Model
 
----
+S = Map[id → item]
+item = { id, name, qty }
 
-## Current Status
+All operations are state transitions:
 
-* Django scaffold complete
-* Environment-based configuration in place
-* Preparing domain + service layer implementation
-* No endpoints or UI yet (intentional)
+S' = f(S, input)
 
 ---
 
-## Project Structure (in progress)
+### Invariants (truth)
 
-```
-inventory-system-v2/
-  items/
-    domain/
-    services/
-    repo/
-  README.md
-```
+The system guarantees:
 
----
+* name.strip() ≠ ""
+* qty ∈ ℤ
+* qty ≥ 0
+* name is unique
 
-## Future Work
+If any invariant fails:
 
-* Implement domain model + invariants
-* Add service layer
-* Introduce Postgres persistence
-* Add API endpoints
-* Build React UI
+S' = S
+
+No mutation is allowed.
 
 ---
 
-## Author
+### Invariant Enforcement
 
-Nick — Software engineer in training, focused on systems design and long-term mastery.
+Invariants are:
+
+* centralized in `invariants.py`
+* pure (no mutation)
+* dict in → dict out
+* deterministic
+
+They are enforced at the model boundary before any database commit.
+
+Mutation happens only at:
+
+model.save()
+
+---
+
+### Transition Law
+
+All transitions follow:
+
+validate → commit → return
+
+Never:
+
+commit → fix later
+
+This guarantees database correctness and rollback safety.
+
+---
+
+### Transactions
+
+All write operations are wrapped in:
+
+transaction.atomic()
+
+This ensures:
+
+valid → commit
+invalid → rollback
+
+---
+
+## Endpoints
+
+All interaction is done via curl.
+
+### Create item
+
+POST /items
+
+Example:
+
+curl -X POST [http://127.0.0.1:8000/items](http://127.0.0.1:8000/items) 
+-H "Content-Type: application/json" 
+-d '{"name":"apple","qty":5}'
+
+Success response:
+
+201 Created
+{
+"id": "...",
+"name": "apple",
+"qty": 5
+}
+
+Invalid input returns 400 and does not mutate state.
+Duplicate names are rejected.
+
+---
+
+## Running Locally
+
+Install dependencies:
+pip install -r requirements.txt
+
+Run migrations:
+python manage.py migrate
+
+Start server:
+python manage.py runserver
+
+Run tests:
+python manage.py test
+
+Tests assert database state, not just return values.
+
+---
+
+## Current Features
+
+* transactional create_item
+* centralized invariant enforcement
+* database-enforced uniqueness
+* rollback on failure
+* curl-driven interaction
+* state-based testing
+
+---
+
+## Upcoming Transitions
+
+* delete_item(id) (idempotent)
+* adjust_qty(delta) (bounded)
+* authentication layer
+* PostgreSQL migration
+
+---
+
+## Why this project exists
+
+Most tutorials focus on frameworks and UI.
+This project focuses on:
+
+state
+invariants
+transactions
+correctness
+
+The goal is to build backend systems that are predictable, testable, and safe under failure.
+
+---
+
+## License
+
+MIT
