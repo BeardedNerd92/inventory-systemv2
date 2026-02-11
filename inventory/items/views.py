@@ -1,14 +1,29 @@
 import json
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-
+from items.auth import extract_bearer_token
 from items.services.inventory_service import create_item, delete_item, update_qty
+from items.session_store import SESSIONS
+from typing import Optional
+
+def resolve_user_id(request) -> Optional[str]:
+    token = extract_bearer_token(request)
+    if token is None:
+        return None
+    return SESSIONS.get(token)
 
 
 @csrf_exempt
 def create_item_view(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
+    
+  
+    user_id = resolve_user_id(request)
+    if user_id is None:
+        return JsonResponse({"error": "unauthorized"}, status=401)
+
+
 
     try:
         raw = request.body.decode("utf-8") if request.body else "{}"
@@ -20,12 +35,12 @@ def create_item_view(request):
     qty = data.get("qty")
 
     try:
-        item = create_item(name, qty)
+        item = create_item(name, qty, user_id)
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse(
-        {"id": str(item.id), "name": item.name, "qty": item.qty},
+        {"id": str(item.id), "name": item.name, "qty": item.qty, "owner_id": user_id},
         status=201,
     )
 
@@ -35,7 +50,18 @@ def delete_item_view(request, item_id: str):
     if request.method != "DELETE":
         return JsonResponse({"error": "DELETE only"}, status=405)
 
-    delete_item(item_id)
+    user_id = resolve_user_id(request)
+    if user_id is None:
+        return JsonResponse({"error": "unauthorized"}, status=401)
+
+
+    try:
+        delete_item(item_id, user_id)
+    except PermissionError:
+        return JsonResponse({"error": "forbidden"}, status=403)
+    except ValueError:
+        return JsonResponse({"error": "not found"}, status=404)
+
     return HttpResponse(status=204)
 
 

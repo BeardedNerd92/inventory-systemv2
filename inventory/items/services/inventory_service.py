@@ -1,13 +1,12 @@
 from django.db.models import F
 from django.db import transaction, IntegrityError
 from items.domain.models import Item
-import uuid
 
 
-def create_item(name:str, qty:int) -> Item:
+def create_item(name:str, qty:int, user_id) -> Item:
     try:
         with transaction.atomic():
-            item = Item(name=name, qty=qty)
+            item = Item(name=name, qty=qty, owner_id=user_id)
             item.save()
             return item
 
@@ -15,9 +14,21 @@ def create_item(name:str, qty:int) -> Item:
         raise ValueError("item with that name already exists")
 
 
-def delete_item(item_id:str) -> None:
+from django.db import transaction
+
+def delete_item(item_id: str, user_id: str) -> None:
     with transaction.atomic():
-        Item.objects.filter(id=item_id).delete()
+        deleted_count, _ = Item.objects.filter(id=item_id, owner_id=user_id).delete()
+
+    if deleted_count > 0:
+        return
+
+    exists = Item.objects.filter(id=item_id).exists()
+    if exists:
+        raise PermissionError("forbidden")
+
+    raise ValueError("item not found")
+
 
 
 def update_qty(item_id:str, delta:int) -> None:

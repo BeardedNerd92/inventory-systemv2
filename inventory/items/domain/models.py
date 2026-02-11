@@ -7,6 +7,8 @@ class Item(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
     qty = models.IntegerField()
+    owner_id = models.CharField(max_length=64, default=uuid.uuid4 ,editable=False)
+
 
     def clean(self):
         canonical = normalize_and_validate_item({
