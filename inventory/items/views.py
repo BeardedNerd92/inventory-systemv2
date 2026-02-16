@@ -33,16 +33,19 @@ def create_item_view(request):
 
     name = data.get("name")
     qty = data.get("qty")
+    
 
     try:
         item = create_item(name, qty, user_id)
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=400)
+    
 
     return JsonResponse(
         {"id": str(item.id), "name": item.name, "qty": item.qty, "owner_id": user_id},
         status=201,
     )
+
 
 
 @csrf_exempt

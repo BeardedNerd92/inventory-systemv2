@@ -16,7 +16,7 @@ LOGGING = {
 
     "formatters": {
         "json": {
-            "()": "inventory.settings.logging.JsonFormatter",
+            "()": "inventory.logging.json_formatter.JsonFormatter",
         },
     },
 
@@ -65,6 +65,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+   
+    'inventory.logging.middleware.RequestLogMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

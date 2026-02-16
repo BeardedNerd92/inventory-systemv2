@@ -27,7 +27,7 @@ class JsonFormatter(logging.Formatter):
         # 2) Optional structured extras (safe enrichment)
         # If you pass extra={"event": "...", "request_id": "..."} they appear here.
         for key in ("event", "request_id", "method", "path", "status_code", "latency_ms",
-                    "actor_id", "item_id", "mutation", "outcome", "error_code", "detail"):
+                    "owner_id", "item_id", "mutation", "outcome", "error_code", "detail"):
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
 
